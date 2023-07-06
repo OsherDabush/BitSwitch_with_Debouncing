@@ -1,0 +1,35 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity REG_High_Z is
+generic(n: positive := 2);
+port (clk: in std_logic;
+        en: in std_logic;
+		d: in std_logic_vector (n-1 downto 0);
+		q: inout std_logic_vector (n-1 downto 0));
+end REG_High_Z;
+
+architecture Behavioral of REG_High_Z is
+
+signal temp : std_logic_vector (n-1 downto 0);
+begin
+
+process(clk) is
+begin
+  if(rising_edge(clk)) then
+	 temp <= d;
+  end if;
+end process;
+
+process(en)
+begin
+  if(en = '1') then
+    q <= temp;
+  else
+    q <= (others => 'Z');
+  end if;
+end process;
+end Behavioral;
+

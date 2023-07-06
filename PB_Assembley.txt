@@ -1,0 +1,134 @@
+; toggle light of led indifinetly, with delay of N^3  loops (each loop is about 2 instructions and each instruction executes in 2 clock cycles)
+; so for instance with a 100Mhz clock, 10ns per cycle, so one loop is about 4 x 10ns = 40 ns.
+; So N^3 x40 ns is the total delay time we get if we choose theDelay = N.
+
+
+; myPortIN	DSIN 00
+; myPortOUT	DSOUT 01
+
+
+	CONSTANT in_port, 00
+	CONSTANT out_port, 01
+	CONSTANT theDelay, 64
+	CONSTANT counter, 04
+	NAMEREG s0, CNT0reg
+	NAMEREG s1, CNT1reg 
+	NAMEREG s2, CNT2reg
+	NAMEREG s3, CNT
+	NAMEREG s4, RAM_ADDRESS
+	NAMEREG s5,	RAM_DATA
+	NAMEREG s6, tmp1
+	NAMEREG s7, tmp2
+	NAMEREG s8,	A_reg
+	
+	start:
+		CALL debounce
+		CALL load_in
+		
+	ADDRESS 030
+	
+	debounce:
+		CALL input
+		
+	compare_in:
+		COMPARE RAM_ADDRESS, 00
+		JUMP Z, done_debouncing
+		FETCH tmp1, (RAM_ADDRESS)
+		SUB RAM_ADDRESS, 01
+		FETCH tmp2, (RAM_ADDRESS)
+		COMPARE tmp1, tmp2
+		JUMP Z, compare_in
+		
+	done_debouncing:
+	RETURN
+		
+	ADDRESS 060	
+		
+	input:
+		CALL init
+		
+	ram_fill:
+		CALL delay
+		SUB RAM_ADDRESS, 01
+		INPUT RAM_DATA, in_port
+		STORE RAM_DATA, (RAM_ADDRESS)
+		JUMP NZ, ram_fill
+	RETURN
+	
+	ADDRESS 090
+		
+	delay:
+		CALL init0
+	loop0:
+		CALL delay1
+		SUB CNT0reg, 01
+		JUMP NZ, loop0
+	RETURN
+		
+	delay1:
+		CALL init1
+	loop1:
+		CALL delay2
+		SUB CNT1reg, 01
+		JUMP NZ, loop1
+	RETURN	
+			
+	delay2:
+		CALL init2
+	loop2:
+		SUB CNT2reg, 01
+		JUMP NZ, loop2
+	RETURN		
+			
+	ADDRESS 120	
+	
+	load_in:
+		INPUT A_reg, in_port
+		LOAD tmp1, A_reg
+		LOAD tmp2, 00
+		LOAD CNT, counter
+
+	bit_switch:
+		AND tmp1, 0F
+		SRA tmp1
+		JUMP C, bit_1
+		CALL bit_0
+		SUB CNT, 01
+		JUMP NZ, bit_switch
+		CALL output
+		
+	bit_1:
+		SL1 tmp2
+		SUB CNT, 01
+		JUMP NZ, bit_switch
+		CALL output
+		
+	bit_0:
+		SL0 tmp2
+	RETURN
+		
+	output:
+		OUTPUT tmp2, out_port
+		JUMP start
+	
+	ADDRESS 150
+	
+	init:
+		LOAD RAM_ADDRESS, 14
+	RETURN
+	
+	init0:
+		LOAD CNT0reg, theDelay
+	RETURN
+		
+	init1:
+		LOAD CNT1reg, theDelay
+	RETURN	
+		
+	init2:
+		LOAD CNT2reg, theDelay
+	RETURN	
+			
+
+
+
